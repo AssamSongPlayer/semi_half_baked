@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Heart, Eye, MoreHorizontal, Plus, X } from 'lucide-react';
+import { Play, Heart, Eye, MoreHorizontal, Plus, X, ListPlus } from 'lucide-react';
 import { Song } from '@/types';
 import { useTheme } from '@/components/ThemeContext';
 
@@ -8,6 +8,7 @@ interface SongCardProps {
   onPlay: (song: Song) => void;
   formatNumber: (num: number) => string;
   onAddToPlaylist?: (song: Song) => void;
+  onAddToQueue?: (song: Song) => void;
   showRemoveButton?: boolean;
   onRemove?: () => void;
   cachedImageUrl: string;
@@ -18,11 +19,13 @@ const SongCard: React.FC<SongCardProps> = ({
   onPlay, 
   formatNumber, 
   onAddToPlaylist,
+  onAddToQueue,
   showRemoveButton = false,
   onRemove,
   cachedImageUrl
 }) => {
   const { isDarkMode } = useTheme();
+  const [showMenu, setShowMenu] = React.useState(false);
 
   const handleContainerClick = () => {
     onPlay(song);
@@ -82,12 +85,33 @@ const SongCard: React.FC<SongCardProps> = ({
             <Plus size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
           </button>
         )}
-        <button 
-          onClick={(e) => handleButtonClick(e, () => {})}
-          className={`p-1 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} rounded-full transition-colors`}
-        >
-          <MoreHorizontal size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={(e) => handleButtonClick(e, () => setShowMenu(!showMenu))}
+            className={`p-1 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} rounded-full transition-colors`}
+          >
+            <MoreHorizontal size={16} className={isDarkMode ? 'text-gray-400' : 'text-gray-600'} />
+          </button>
+          
+          {showMenu && (
+            <div className={`absolute right-0 top-8 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow-lg py-2 w-48 z-20`}>
+              {onAddToQueue && (
+                <button
+                  onClick={(e) => {
+                    handleButtonClick(e, () => {
+                      onAddToQueue(song);
+                      setShowMenu(false);
+                    });
+                  }}
+                  className={`w-full text-left px-4 py-2 ${isDarkMode ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'} flex items-center transition-colors`}
+                >
+                  <ListPlus size={16} className="mr-3" />
+                  Add to Queue
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

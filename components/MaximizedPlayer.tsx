@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, MoreHorizontal, Heart, Share2, Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Shuffle, Plus, Eye } from 'lucide-react';
+import { ChevronDown, MoreHorizontal, Heart, Share2, Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Shuffle, Plus, Eye, List, X } from 'lucide-react';
 import { Song } from '@/types';
 import { useTheme } from '@/components/ThemeContext';
 
@@ -21,6 +21,9 @@ interface MaximizedPlayerProps {
   setVolume: (volume: number) => void;
   isSeeking: boolean;
 setIsSeeking: (value: boolean) => void;
+  queue: Song[];
+  onPlayFromQueue: (song: Song) => void;
+  onRemoveFromQueue: (songId: string) => void;
 
 }
 
@@ -41,11 +44,15 @@ const MaximizedPlayer: React.FC<MaximizedPlayerProps> = ({
   volume,
   setVolume,
   setIsSeeking,
-  isSeeking
+  isSeeking,
+  queue,
+  onPlayFromQueue,
+  onRemoveFromQueue
 }) => {
   const { isDarkMode } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const [localSeekTime, setLocalSeekTime] = useState<number | null>(null);
+  const [showQueue, setShowQueue] = useState(false);
 
   const formatTime = (seconds: number) => {
   if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
@@ -76,7 +83,21 @@ const MaximizedPlayer: React.FC<MaximizedPlayerProps> = ({
           <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-sm`}>Playing from</p>
           <p className={`${isDarkMode ? 'text-white' : 'text-gray-900'} font-medium`}>Trending Now</p>
         </div>
-        <div className="relative">
+        <div className="flex items-center space-x-2">
+          {/* Queue Button */}
+          {queue.length > 0 && (
+            <button 
+              onClick={() => setShowQueue(!showQueue)}
+              className={`p-2 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} rounded-full transition-colors relative`}
+            >
+              <List size={24} className={isDarkMode ? 'text-white' : 'text-gray-900'} />
+              <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {queue.length}
+              </span>
+            </button>
+          )}
+          
+          <div className="relative">
           <button 
             onClick={() => setShowMenu(!showMenu)}
             className={`p-2 ${isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-200'} rounded-full transition-colors`}
@@ -104,10 +125,57 @@ const MaximizedPlayer: React.FC<MaximizedPlayerProps> = ({
             </div>
           )}
         </div>
+        </div>
       </div>
 
+      {/* Queue Sidebar */}
+      {showQueue && queue.length > 0 && (
+        <div className={`fixed right-0 top-0 h-full w-80 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-l z-60 transform transition-transform`}>
+          <div className="p-4 border-b border-gray-700">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Queue ({queue.length})</h3>
+              <button 
+                onClick={() => setShowQueue(false)}
+                className={`p-1 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'} rounded-full transition-colors`}
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+          <div className="overflow-y-auto h-full pb-20">
+            {queue.map((queueSong, index) => (
+              <div key={queueSong.id} className={`flex items-center p-3 ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'} transition-colors`}>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} w-8`}>{index + 1}</span>
+                <img
+                  src={queueSong.image}
+                  alt={queueSong.name}
+                  className="w-10 h-10 rounded object-cover mr-3"
+                />
+                <div className="flex-1 min-w-0">
+                  <h4 className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'} truncate text-sm`}>{queueSong.name}</h4>
+                  <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'} text-xs truncate`}>{queueSong.artist}</p>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => onPlayFromQueue(queueSong)}
+                    className={`p-1 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} rounded-full transition-colors`}
+                  >
+                    <Play size={14} className="text-purple-400" />
+                  </button>
+                  <button
+                    onClick={() => onRemoveFromQueue(queueSong.id)}
+                    className={`p-1 ${isDarkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} rounded-full transition-colors`}
+                  >
+                    <X size={14} className="text-red-400" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Scrollable Content Area - Properly contained */}
-      <div className="flex-1 overflow-y-auto px-4">
+      <div className={`flex-1 overflow-y-auto px-4 ${showQueue ? 'mr-80' : ''} transition-all`}>
         <div className="max-h-full">
           {/* Album Art - Smaller and centered */}
           <div className="flex justify-center py-6">

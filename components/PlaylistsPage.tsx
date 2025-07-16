@@ -13,6 +13,7 @@ interface PlaylistsPageProps {
   onRenamePlaylist: (playlistId: string, newName: string) => void;
   onRemoveSongFromPlaylist: (playlistId: string, songId: string) => void;
   imageUrls: Record<string, string>; // <-- Add this line
+  onAddToQueue: (song: Song) => void;
 }
 
 
@@ -24,7 +25,8 @@ const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
   onDeletePlaylist,
   onRenamePlaylist,
   onRemoveSongFromPlaylist,
-  imageUrls
+  imageUrls,
+  onAddToQueue
 }) => {
   const { isDarkMode } = useTheme();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
@@ -138,6 +140,7 @@ const PlaylistsPage: React.FC<PlaylistsPageProps> = ({
                     song={{ ...song, image: imageUrls[song.id] || '/placeholder.png' }} 
                     onPlay={onSongPlay} 
                     formatNumber={formatNumber}
+                    onAddToQueue={onAddToQueue}
                     showRemoveButton={true}
                     onRemove={() => handleRemoveSong(song.id)}
                     cachedImageUrl={imageUrls[song.id] || '/placeholder.png'}

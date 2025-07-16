@@ -1,5 +1,5 @@
 import React, { useState,useEffect } from 'react';
-import { TrendingUp, Music, Plus } from 'lucide-react';
+import { TrendingUp, Music, Plus, Clock, Headphones } from 'lucide-react';
 import { Song } from '@/types';
 import { useTheme } from '@/components/ThemeContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,22 +9,34 @@ import { getFileLink } from '@/utils/imageCache';
 
 
 interface HomePageProps {
-  songs: Song[];
+  trendingSongs: Song[];
+  listenedSongs: Song[];
+  notListenedSongs: Song[];
   onSongPlay: (song: Song) => void;
   formatNumber: (num: number) => string;
   onAddToPlaylist: (song: Song) => void;
   imageUrls: Record<string, string>;  // NEW
-  onLoadMore: () => void;             // NEW
-  hasMoreSongs: boolean;              // NEW
+  onAddToQueue: (song: Song) => void;
 }
 
 
-const HomePage: React.FC<HomePageProps> = ({ songs, onSongPlay, formatNumber, onAddToPlaylist,imageUrls,onLoadMore,hasMoreSongs }) => {
+const HomePage: React.FC<HomePageProps> = ({ 
+  trendingSongs, 
+  listenedSongs, 
+  notListenedSongs, 
+  onSongPlay, 
+  formatNumber, 
+  onAddToPlaylist,
+  imageUrls,
+  onAddToQueue
+}) => {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
+  const [displayedListened, setDisplayedListened] = useState(10);
+  const [displayedNotListened, setDisplayedNotListened] = useState(10);
   
   // Show loading state if no songs are loaded yet
-  if (songs.length === 0) {
+  if (trendingSongs.length === 0 && listenedSongs.length === 0 && notListenedSongs.length === 0) {
     return (
       <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'} flex items-center justify-center`}>
         <div className="text-center">
@@ -63,7 +75,8 @@ const HomePage: React.FC<HomePageProps> = ({ songs, onSongPlay, formatNumber, on
       {/* Content */}
       <div className="px-4 pb-4">
         {/* Trending Section */}
-        <div className="mb-8">
+        {trendingSongs.length > 0 && (
+          <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold flex items-center">
               <TrendingUp className="mr-2 text-purple-400" size={20} />
@@ -72,7 +85,7 @@ const HomePage: React.FC<HomePageProps> = ({ songs, onSongPlay, formatNumber, on
             <button className="text-purple-400 text-sm font-medium">See all</button>
           </div>
           <div className="flex space-x-4 overflow-x-auto pb-2 scrollbar-hide">
-            {songs.slice(0, 10).map((song) => (
+            {trendingSongs.map((song) => (
               <TrendingSong 
                 key={song.id}
                 song={{ ...song, image: imageUrls[song.id] || '' }}
@@ -83,42 +96,73 @@ const HomePage: React.FC<HomePageProps> = ({ songs, onSongPlay, formatNumber, on
             ))}
           </div>
         </div>
+        )}
 
-        {/* Recommendations Section */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Made for you</h2>
-            <button className="text-purple-400 text-sm font-medium">See all</button>
+        {/* Listened Songs Section */}
+        {listenedSongs.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Headphones className="mr-2 text-green-400" size={20} />
+                Recently Listened
+              </h2>
+              {listenedSongs.length > displayedListened && (
+                <button 
+                  onClick={() => setDisplayedListened(prev => prev + 10)}
+                  className="text-purple-400 text-sm font-medium"
+                >
+                  See more
+                </button>
+              )}
+            </div>
+            <div className="space-y-3">
+              {listenedSongs.slice(0, displayedListened).map((song) => (
+                <SongCard
+                  key={song.id}
+                  song={{ ...song, image: imageUrls[song.id] || '' }}
+                  onPlay={onSongPlay}
+                  formatNumber={formatNumber}
+                  onAddToPlaylist={onAddToPlaylist}
+                  onAddToQueue={onAddToQueue}
+                  cachedImageUrl={imageUrls[song.id]}
+                />
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
-            {songs.map((song) => (
-              <SongCard
-                key={song.id}
-                song={{ ...song, image: imageUrls[song.id] || '' }}
-                onPlay={onSongPlay}
-                formatNumber={formatNumber}
-                onAddToPlaylist={onAddToPlaylist}
-                cachedImageUrl={imageUrls[song.id]}
-              />
-            ))}
-          </div>
-          
-          {/* Load More Button */}
-          {hasMoreSongs && (
-  <div className="flex justify-center mt-6">
-    <button
-      onClick={onLoadMore}
-      className={`flex items-center space-x-2 px-6 py-3 ${
-        isDarkMode ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-50 border-gray-200'
-      } border rounded-full transition-colors`}
-    >
-      <Plus size={18} className="text-purple-400" />
-      <span className={isDarkMode ? 'text-white' : 'text-gray-900'}>Load More</span>
-    </button>
-  </div>
-)}
+        )}
 
-        </div>
+        {/* Not Listened Songs Section */}
+        {notListenedSongs.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Clock className="mr-2 text-blue-400" size={20} />
+                Discover New Music
+              </h2>
+              {notListenedSongs.length > displayedNotListened && (
+                <button 
+                  onClick={() => setDisplayedNotListened(prev => prev + 10)}
+                  className="text-purple-400 text-sm font-medium"
+                >
+                  See more
+                </button>
+              )}
+            </div>
+            <div className="space-y-3">
+              {notListenedSongs.slice(0, displayedNotListened).map((song) => (
+                <SongCard
+                  key={song.id}
+                  song={{ ...song, image: imageUrls[song.id] || '' }}
+                  onPlay={onSongPlay}
+                  formatNumber={formatNumber}
+                  onAddToPlaylist={onAddToPlaylist}
+                  onAddToQueue={onAddToQueue}
+                  cachedImageUrl={imageUrls[song.id]}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

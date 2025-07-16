@@ -22,6 +22,9 @@ function MusicPlayerContent() {
   const { user } = useAuth();
   const {
     songs,
+    trendingSongs,
+    listenedSongs,
+    notListenedSongs,
     playlists,
     likedSongs,
     lastPlayedSong,
@@ -57,6 +60,7 @@ function MusicPlayerContent() {
   const [isSeeking, setIsSeeking] = useState(false);
   const [pendingSeekTime, setPendingSeekTime] = useState<number | null>(null);
   const [isExternallySeeking, setIsExternallySeeking] = useState(false);
+  const [queue, setQueue] = useState<Song[]>([]);
 
 
 const loadMoreSongs = () => {
@@ -313,6 +317,24 @@ const handleNext = () => {
     setShowAddToPlaylistModal(true);
   };
 
+  const addToQueue = (song: Song) => {
+    setQueue(prev => {
+      // Check if song is already in queue
+      if (prev.some(queueSong => queueSong.id === song.id)) {
+        return prev;
+      }
+      return [...prev, song];
+    });
+  };
+
+  const removeFromQueue = (songId: string) => {
+    setQueue(prev => prev.filter(song => song.id !== songId));
+  };
+
+  const playFromQueue = (song: Song) => {
+    handleSongPlay(song);
+    removeFromQueue(song.id);
+  };
   const renderContent = () => {
     if (currentPage === 'playlists') {
       return (
@@ -325,24 +347,26 @@ const handleNext = () => {
           onRenamePlaylist={renamePlaylist}
           onRemoveSongFromPlaylist={removeSongFromPlaylist}
           imageUrls={imageUrls}
+          onAddToQueue={addToQueue}
         />
       );
     }
     
     if (currentPage === 'liked') {
-      return <LikedSongsPage songs={likedSongs} onBack={() => setCurrentPage('main')} onSongPlay={handleSongPlay} imageUrls={imageUrls}/>;
+      return <LikedSongsPage songs={likedSongs} onBack={() => setCurrentPage('main')} onSongPlay={handleSongPlay} imageUrls={imageUrls} onAddToQueue={addToQueue}/>;
     }
 
     switch (activeTab) {
       case 'home':
         return <HomePage
-                songs={displayedSongs}
+                trendingSongs={trendingSongs}
+                listenedSongs={listenedSongs}
+                notListenedSongs={notListenedSongs}
                 onSongPlay={handleSongPlay}
                 formatNumber={formatNumber}
                 onAddToPlaylist={handleAddToPlaylist}
                 imageUrls={imageUrls}
-                onLoadMore={loadMoreSongs}
-                hasMoreSongs={displayCount < songs.length}
+                onAddToQueue={addToQueue}
               />;
       case 'search':
         return <SearchPage
@@ -352,18 +376,20 @@ const handleNext = () => {
               onAddToPlaylist={handleAddToPlaylist}
               imageUrls={imageUrls}
               setImageUrls={setImageUrls}
+              onAddToQueue={addToQueue}
             />;
       case 'settings':
         return <SettingsPage onPlaylistsClick={() => setCurrentPage('playlists')} onLikedClick={() => setCurrentPage('liked')} />;
       default:
         return <HomePage
-              songs={displayedSongs}
+              trendingSongs={trendingSongs}
+              listenedSongs={listenedSongs}
+              notListenedSongs={notListenedSongs}
               onSongPlay={handleSongPlay}
               formatNumber={formatNumber}
               onAddToPlaylist={handleAddToPlaylist}
               imageUrls={imageUrls}
-              onLoadMore={loadMoreSongs}
-              hasMoreSongs={displayCount < songs.length}
+              onAddToQueue={addToQueue}
             />;
     }
   };
@@ -466,6 +492,9 @@ const setCurrentTimeState = setCurrentTime;
                 setVolume={setVolume}
                 isSeeking={isSeeking}
                 setIsSeeking={setIsSeeking}
+                queue={queue}
+                onPlayFromQueue={playFromQueue}
+                onRemoveFromQueue={removeFromQueue}
               />
             )}
           </>

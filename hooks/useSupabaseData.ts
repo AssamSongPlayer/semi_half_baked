@@ -5,6 +5,9 @@ import { Song, Playlist } from '@/types'
 
 export function useSupabaseData(user: User | null) {
   const [songs, setSongs] = useState<Song[]>([])
+  const [trendingSongs, setTrendingSongs] = useState<Song[]>([])
+  const [listenedSongs, setListenedSongs] = useState<Song[]>([])
+  const [notListenedSongs, setNotListenedSongs] = useState<Song[]>([])
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [likedSongs, setLikedSongs] = useState<Set<number>>(new Set())
   const [lastPlayedSong, setLastPlayedSong] = useState<Song | null>(null)
@@ -31,6 +34,9 @@ export function useSupabaseData(user: User | null) {
   const fetchSongs = async () => {
     if (!user) {
       setSongs([])
+      setTrendingSongs([])
+      setListenedSongs([])
+      setNotListenedSongs([])
       return
     }
     
@@ -54,6 +60,13 @@ export function useSupabaseData(user: User | null) {
         setLikedSongs(userLikedSongs)
       }
 
+      // Fetch user's listening history to categorize songs
+      const { data: historyData } = await supabase
+        .from('history')
+        .select('song_id')
+        .eq('user_id', user.id)
+
+      const listenedSongIds = new Set(historyData?.map(item => item.song_id) || [])
       const convertedSongs = songsData?.map(song => 
         convertDatabaseSong(song, userLikedSongs.has(song.file_id))
       ) || []
@@ -66,6 +79,15 @@ export function useSupabaseData(user: User | null) {
 
       setSongs(sortedSongs);
 
+      // Set trending songs (top 10 by views + likes)
+      setTrendingSongs(sortedSongs.slice(0, 10))
+
+      // Categorize songs into listened and not listened
+      const listened = sortedSongs.filter(song => listenedSongIds.has(song.file_id))
+      const notListened = sortedSongs.filter(song => !listenedSongIds.has(song.file_id))
+      
+      setListenedSongs(listened)
+      setNotListenedSongs(notListened)
       const { data: userData } = await supabase
         .from('users')
         .select('last_song_file_id')
@@ -81,6 +103,9 @@ export function useSupabaseData(user: User | null) {
     } catch (error) {
       console.error('Error fetching songs:', error)
       setSongs([]) // Set empty array on error
+      setTrendingSongs([])
+      setListenedSongs([])
+      setNotListenedSongs([])
     }
   }
 
@@ -396,6 +421,14 @@ setSongs(prevSongs =>
     currentSongRef.current = songId
     setCurrentSongStartTime(new Date())
     
+    // Move song from not listened to listened if it's the first time
+    const songFileId = parseInt(songId)
+    const songToMove = notListenedSongs.find(song => song.file_id === songFileId)
+    if (songToMove) {
+      setListenedSongs(prev => [...prev, songToMove])
+      setNotListenedSongs(prev => prev.filter(song => song.file_id !== songFileId))
+    }
+    
     // Update last song in user profile
     await updateLastSong(songId)
 try {
@@ -454,6 +487,9 @@ try {
     } else {
       // Reset data when user logs out
       setSongs([])
+      setTrendingSongs([])
+      setListenedSongs([])
+      setNotListenedSongs([])
       setPlaylists([])
       setLikedSongs(new Set())
       setLastPlayedSong(null)
@@ -463,6 +499,9 @@ try {
 
   return {
     songs,
+    trendingSongs,
+    listenedSongs,
+    notListenedSongs,
     playlists,
     likedSongs: songs.filter(song => song.isLiked),
     lastPlayedSong,

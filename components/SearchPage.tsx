@@ -11,10 +11,11 @@ interface SearchPageProps {
   onAddToPlaylist: (song: Song) => void;
   imageUrls: Record<string, string>;
   setImageUrls: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onAddToQueue: (song: Song) => void;
 }
 
 
-const SearchPage: React.FC<SearchPageProps> = ({ songs, onSongPlay, formatNumber, onAddToPlaylist,imageUrls,setImageUrls }) => {
+const SearchPage: React.FC<SearchPageProps> = ({ songs, onSongPlay, formatNumber, onAddToPlaylist,imageUrls,setImageUrls,onAddToQueue }) => {
   const { isDarkMode } = useTheme();
   const [pendingSearch, setPendingSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,6 +146,7 @@ const SearchPage: React.FC<SearchPageProps> = ({ songs, onSongPlay, formatNumber
                       onPlay={onSongPlay}
                       formatNumber={formatNumber}
                       onAddToPlaylist={onAddToPlaylist}
+                      onAddToQueue={onAddToQueue}
                       cachedImageUrl={imageUrls[song.img_id]}
                     />
                   ))
